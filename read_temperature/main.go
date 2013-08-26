@@ -7,8 +7,9 @@ import (
 )
 
 func main() {
+	var i2cbus byte = 1
 	d := new(bmp085.Device)
-	err := d.Init(1)
+	err := d.Init(i2cbus)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return
