@@ -22,4 +22,4 @@ NOTE:  This has only been tested on a Raspberry Pi.
 
 ### Examples
 
-There is one example app showing how to read the temperature.
+There is one example app showing how to read the temperature. (you may need to be root to read the i2c bus)
