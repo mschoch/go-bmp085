@@ -234,7 +234,7 @@ func (d *Device) ReadPressure() (err error) {
 	log.Printf("x1 is %v", x1)
 	x2 = (b1 * ((b6 * b6) >> 12)) >> 16
 	log.Printf("x2 is %v", x2)
-	x3 = ((x1 + x1) + 2) >> 2
+	x3 = ((x1 + x2) + 2) >> 2
 	log.Printf("x3 is %v", x3)
 	var tmpa = uint32(x3 + 32768)
 	b4 := (ac4 * tmpa) >> 15
