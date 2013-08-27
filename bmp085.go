@@ -63,6 +63,8 @@ type Device struct {
 	md     int16
 }
 
+var DebugCalculations = false
+
 func (d *Device) Init(busNum byte) (err error) {
 	return d.InitCustomAddr(I2C_ADDR, busNum)
 }
@@ -75,7 +77,22 @@ func (d *Device) InitCustomAddr(addr, busNum byte) (err error) {
 	d.busNum = busNum
 	d.addr = addr
 
-	err = d.readCalibration()
+	if !DebugCalculations {
+		err = d.readCalibration()
+	} else {
+		// manually set the values to match the datasheet
+		d.ac1 = 408
+		d.ac2 = -72
+		d.ac3 = -14383
+		d.ac4 = 32741
+		d.ac5 = 32757
+		d.ac6 = 23153
+		d.b1 = 6190
+		d.b2 = 4
+		d.mb = -32767
+		d.mc = -8711
+		d.md = 2868
+	}
 
 	return
 }
@@ -125,6 +142,10 @@ func (d *Device) readUncalibratedTemp() (temp int16, err error) {
 	}
 	p := bytes.NewBuffer(data)
 	err = binary.Read(p, binary.BigEndian, &temp)
+
+	if DebugCalculations {
+		temp = 27898
+	}
 	return
 }
 
@@ -156,6 +177,10 @@ func (d *Device) readUncalibratedPressure() (pressure int32, err error) {
 	log.Printf("after converting to int32: %d", pressure)
 	pressure = pressure >> (8 - d.mode)
 	log.Printf("after shift: %d", pressure)
+
+	if DebugCalculations {
+		pressure = 23843
+	}
 	return
 }
 
@@ -186,6 +211,7 @@ func (d *Device) ReadPressure() (err error) {
 
 	//calculate temp
 	x1 := ((ut - ac6) * ac5) >> 15
+	log.Printf("x1 is %v", x1)
 	x2 := (mc << 11) / (x1 + md)
 	b5 := x1 + x2
 	//t := (b5 + 8) / 16
