@@ -38,6 +38,6 @@ func main() {
 
 	if *elevation != 0.0 {
 		adjustedPressure := float64(pressure) / math.Pow(1-(*elevation/44330), 5.255)
-		fmt.Printf("Sea-level adjusted pressure is %fpa", adjustedPressure)
+		fmt.Printf("Sea-level adjusted pressure is %fpa\n", adjustedPressure)
 	}
 }
