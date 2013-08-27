@@ -12,12 +12,20 @@ package bmp085
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 	"time"
 
 	"bitbucket.org/gmcbay/i2c"
 )
 
 const I2C_ADDR = 0x77
+
+const (
+	ULTRALOWPOWER byte = iota
+	STANDARD
+	HIGHRES
+	ULTRAHIGHRES
+)
 
 const CAL_AC1 byte = 0xAA
 const CAL_AC2 byte = 0xAC
@@ -41,6 +49,7 @@ type Device struct {
 	bus    *i2c.I2CBus
 	busNum byte
 	addr   byte
+	mode   byte
 	ac1    int16
 	ac2    int16
 	ac3    int16
@@ -116,6 +125,98 @@ func (d *Device) readUncalibratedTemp() (temp int16, err error) {
 	}
 	p := bytes.NewBuffer(data)
 	err = binary.Read(p, binary.BigEndian, &temp)
+	return
+}
+
+func (d *Device) readUncalibratedPressure() (pressure int32, err error) {
+	var data []byte
+	if err = d.bus.WriteByte(d.addr, CONTROL, READ_PRESSURE_CMD+(d.mode<<6)); err != nil {
+		return
+	}
+	switch d.mode {
+	case ULTRALOWPOWER:
+		time.Sleep(5 * time.Millisecond)
+	case STANDARD:
+		time.Sleep(8 * time.Millisecond)
+	case HIGHRES:
+		time.Sleep(14 * time.Millisecond)
+	case ULTRAHIGHRES:
+		time.Sleep(26 * time.Millisecond)
+	}
+
+	if data, err = d.bus.ReadByteBlock(d.addr, PRESSURE_DATA, 3); err != nil {
+		return
+	}
+	log.Printf("raw bytes read are: %v", data)
+	zpadData := make([]byte, 4)
+	copy(zpadData[1:], data)
+	log.Printf("after padding with 0: %v", zpadData)
+	p := bytes.NewBuffer(zpadData)
+	err = binary.Read(p, binary.BigEndian, &pressure)
+	log.Printf("after converting to int32: %d", pressure)
+	pressure = pressure >> (8 - d.mode)
+	log.Printf("after shift: %d", pressure)
+	return
+}
+
+func (d *Device) ReadPressure() (err error) {
+
+	var utraw int16
+	if utraw, err = d.readUncalibratedTemp(); err != nil {
+		return
+	}
+
+	var upraw int32
+	if upraw, err = d.readUncalibratedPressure(); err != nil {
+		return
+	}
+
+	// create larger vars to avoid overflowing
+	ut := int32(utraw)
+	ac1 := int32(d.ac1)
+	ac2 := int32(d.ac2)
+	ac3 := int32(d.ac3)
+	ac4 := uint32(d.ac4)
+	ac6 := int32(d.ac6)
+	ac5 := int32(d.ac5)
+	b1 := int32(d.b1)
+	b2 := int32(d.b2)
+	mc := int32(d.mc)
+	md := int32(d.md)
+
+	//calculate temp
+	x1 := ((ut - ac6) * ac5) >> 15
+	x2 := (mc << 11) / (x1 + md)
+	b5 := x1 + x2
+	//t := (b5 + 8) / 16
+
+	// calculate pressure
+	b6 := b5 - 4000
+	x1 = (b2 * ((b6 * b6) >> 12)) >> 11
+	x2 = (ac2 * b6) >> 11
+	x3 := x1 + x2
+	b3 := (((ac1*4 + x3) << d.mode) + 2) / 4
+
+	x1 = (ac3 * b6) >> 13
+	x2 = (b1 * ((b6 * b6) >> 12)) >> 16
+	x3 = ((x1 + x1) + 2) >> 2
+	var tmpa = uint32(x3 + 32768)
+	b4 := (ac4 * tmpa) >> 15
+	var tmpb = uint32(upraw - b3)
+	var tmpc = uint32(50000 >> d.mode)
+	b7 := tmpb * tmpc
+
+	p := int32((b7 / b4) / 2)
+	if b7 > 0x80000000 {
+		p = int32((b7 * 2) / b4)
+	}
+
+	x1 = (p >> 8) * (p >> 8)
+	x1 = (x1 * 3038) >> 16
+	x2 = (-7367 * p) >> 16
+
+	p = p + ((x1 + x2 + int32(3791)) >> 4)
+	log.Printf("p is %v", p)
 	return
 }
 
