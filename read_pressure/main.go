@@ -10,12 +10,18 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"math"
 
 	"github.com/mschoch/go-bmp085"
 )
 
+var elevation = flag.Float64("elevation", 0, "Elevation of sensor in meters")
+
 func main() {
+	flag.Parse()
+
 	var i2cbus byte = 1
 	d := new(bmp085.Device)
 	err := d.Init(i2cbus)
@@ -29,4 +35,9 @@ func main() {
 		fmt.Printf("error: %v\n", err)
 	}
 	fmt.Printf("Pressure is %dpa\n", pressure)
+
+	if *elevation != 0.0 {
+		adjustedPressure := float64(pressure) / math.Pow(1-(*elevation/44330), 5.255)
+		fmt.Printf("Sea-level adjusted pressure is %fpa", adjustedPressure)
+	}
 }
