@@ -28,5 +28,5 @@ func main() {
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 	}
-	fmt.Printf("Pressure is %dpa\n", temp)
+	fmt.Printf("Pressure is %dpa\n", pressure)
 }
