@@ -213,24 +213,36 @@ func (d *Device) ReadPressure() (err error) {
 	x1 := ((ut - ac6) * ac5) >> 15
 	log.Printf("x1 is %v", x1)
 	x2 := (mc << 11) / (x1 + md)
+	log.Printf("x2 is %v", x2)
 	b5 := x1 + x2
+	log.Printf("b5 is %v", b5)
 	//t := (b5 + 8) / 16
 
 	// calculate pressure
 	b6 := b5 - 4000
+	log.Printf("b6 is %v", b6)
 	x1 = (b2 * ((b6 * b6) >> 12)) >> 11
+	log.Printf("x1 is %v", x1)
 	x2 = (ac2 * b6) >> 11
+	log.Printf("x2 is %v", x2)
 	x3 := x1 + x2
+	log.Printf("x3 is %v", x3)
 	b3 := (((ac1*4 + x3) << d.mode) + 2) / 4
+	log.Printf("b3 is %v", b3)
 
 	x1 = (ac3 * b6) >> 13
+	log.Printf("x1 is %v", x1)
 	x2 = (b1 * ((b6 * b6) >> 12)) >> 16
+	log.Printf("x2 is %v", x2)
 	x3 = ((x1 + x1) + 2) >> 2
+	log.Printf("x3 is %v", x3)
 	var tmpa = uint32(x3 + 32768)
 	b4 := (ac4 * tmpa) >> 15
+	log.Printf("b4 is %v", b4)
 	var tmpb = uint32(upraw - b3)
 	var tmpc = uint32(50000 >> d.mode)
 	b7 := tmpb * tmpc
+	log.Printf("b7 is %v", b7)
 
 	p := int32((b7 / b4) / 2)
 	if b7 > 0x80000000 {
