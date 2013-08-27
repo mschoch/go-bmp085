@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	bmp085.DebugCalculations = true
+	bmp085.DebugCalculations = false 
 	var i2cbus byte = 1
 	d := new(bmp085.Device)
 	err := d.Init(i2cbus)

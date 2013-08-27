@@ -245,7 +245,7 @@ func (d *Device) ReadPressure() (err error) {
 	log.Printf("b7 is %v", b7)
 
 	p := int32((b7 / b4) / 2)
-	if b7 > 0x80000000 {
+	if b7 < 0x80000000 {
 		p = int32((b7 * 2) / b4)
 	}
 
