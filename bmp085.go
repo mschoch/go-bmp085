@@ -249,9 +249,14 @@ func (d *Device) ReadPressure() (err error) {
 		p = int32((b7 * 2) / b4)
 	}
 
+	log.Printf("p is %v", p)
+
 	x1 = (p >> 8) * (p >> 8)
+	log.Printf("x1 is %v", x1)
 	x1 = (x1 * 3038) >> 16
+	log.Printf("x1 is %v", x1)
 	x2 = (-7367 * p) >> 16
+	log.Printf("x2 is %v", x2)
 
 	p = p + ((x1 + x2 + int32(3791)) >> 4)
 	log.Printf("p is %v", p)
