@@ -12,7 +12,6 @@ package bmp085
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"time"
 
 	"bitbucket.org/gmcbay/i2c"
@@ -63,8 +62,6 @@ type Device struct {
 	md     int16
 }
 
-var DebugCalculations = false
-
 func (d *Device) Init(busNum byte) (err error) {
 	return d.InitCustomAddr(I2C_ADDR, busNum)
 }
@@ -77,22 +74,7 @@ func (d *Device) InitCustomAddr(addr, busNum byte) (err error) {
 	d.busNum = busNum
 	d.addr = addr
 
-	if !DebugCalculations {
-		err = d.readCalibration()
-	} else {
-		// manually set the values to match the datasheet
-		d.ac1 = 408
-		d.ac2 = -72
-		d.ac3 = -14383
-		d.ac4 = 32741
-		d.ac5 = 32757
-		d.ac6 = 23153
-		d.b1 = 6190
-		d.b2 = 4
-		d.mb = -32767
-		d.mc = -8711
-		d.md = 2868
-	}
+	err = d.readCalibration()
 
 	return
 }
@@ -143,9 +125,6 @@ func (d *Device) readUncalibratedTemp() (temp int16, err error) {
 	p := bytes.NewBuffer(data)
 	err = binary.Read(p, binary.BigEndian, &temp)
 
-	if DebugCalculations {
-		temp = 27898
-	}
 	return
 }
 
@@ -168,23 +147,16 @@ func (d *Device) readUncalibratedPressure() (pressure int32, err error) {
 	if data, err = d.bus.ReadByteBlock(d.addr, PRESSURE_DATA, 3); err != nil {
 		return
 	}
-	log.Printf("raw bytes read are: %v", data)
 	zpadData := make([]byte, 4)
 	copy(zpadData[1:], data)
-	log.Printf("after padding with 0: %v", zpadData)
 	p := bytes.NewBuffer(zpadData)
 	err = binary.Read(p, binary.BigEndian, &pressure)
-	log.Printf("after converting to int32: %d", pressure)
 	pressure = pressure >> (8 - d.mode)
-	log.Printf("after shift: %d", pressure)
 
-	if DebugCalculations {
-		pressure = 23843
-	}
 	return
 }
 
-func (d *Device) ReadPressure() (err error) {
+func (d *Device) ReadPressure() (p int32, err error) {
 
 	var utraw int16
 	if utraw, err = d.readUncalibratedTemp(); err != nil {
@@ -211,55 +183,33 @@ func (d *Device) ReadPressure() (err error) {
 
 	//calculate temp
 	x1 := ((ut - ac6) * ac5) >> 15
-	log.Printf("x1 is %v", x1)
 	x2 := (mc << 11) / (x1 + md)
-	log.Printf("x2 is %v", x2)
 	b5 := x1 + x2
-	log.Printf("b5 is %v", b5)
 	//t := (b5 + 8) / 16
 
 	// calculate pressure
 	b6 := b5 - 4000
-	log.Printf("b6 is %v", b6)
 	x1 = (b2 * ((b6 * b6) >> 12)) >> 11
-	log.Printf("x1 is %v", x1)
 	x2 = (ac2 * b6) >> 11
-	log.Printf("x2 is %v", x2)
 	x3 := x1 + x2
-	log.Printf("x3 is %v", x3)
 	b3 := (((ac1*4 + x3) << d.mode) + 2) / 4
-	log.Printf("b3 is %v", b3)
 
 	x1 = (ac3 * b6) >> 13
-	log.Printf("x1 is %v", x1)
 	x2 = (b1 * ((b6 * b6) >> 12)) >> 16
-	log.Printf("x2 is %v", x2)
 	x3 = ((x1 + x2) + 2) >> 2
-	log.Printf("x3 is %v", x3)
 	var tmpa = uint32(x3 + 32768)
 	b4 := (ac4 * tmpa) >> 15
-	log.Printf("b4 is %v", b4)
 	var tmpb = uint32(upraw - b3)
 	var tmpc = uint32(50000 >> d.mode)
 	b7 := tmpb * tmpc
-	log.Printf("b7 is %v", b7)
-
-	p := int32((b7 / b4) / 2)
+	p = int32((b7 / b4) / 2)
 	if b7 < 0x80000000 {
 		p = int32((b7 * 2) / b4)
 	}
-
-	log.Printf("p is %v", p)
-
 	x1 = (p >> 8) * (p >> 8)
-	log.Printf("x1 is %v", x1)
 	x1 = (x1 * 3038) >> 16
-	log.Printf("x1 is %v", x1)
 	x2 = (-7367 * p) >> 16
-	log.Printf("x2 is %v", x2)
-
 	p = p + ((x1 + x2 + int32(3791)) >> 4)
-	log.Printf("p is %v", p)
 	return
 }
 

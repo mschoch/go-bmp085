@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	bmp085.DebugCalculations = false 
 	var i2cbus byte = 1
 	d := new(bmp085.Device)
 	err := d.Init(i2cbus)
@@ -25,5 +24,9 @@ func main() {
 		return
 	}
 
-	d.ReadPressure()
+	pressure, err := d.ReadPressure()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+	fmt.Printf("Pressure is %dpa\n", temp)
 }
