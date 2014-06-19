@@ -5,3 +5,4 @@
 .DS_Store
 /read_temperature/read_temperature
 /read_pressure/read_pressure
+/post_to_nowd/post_to_nowd
