@@ -17,6 +17,7 @@ import (
 	"github.com/mschoch/go-bmp085"
 )
 
+var mode = flag.Int("mode", int(STANDARD), "mode: 0-ultralowpower, 1-standard, 2-highres, 3-ultrahighres")
 var elevation = flag.Float64("elevation", 0, "Elevation of sensor in meters")
 
 func main() {
@@ -29,6 +30,9 @@ func main() {
 		fmt.Printf("error: %v\n", err)
 		return
 	}
+
+	// set mode
+	d.SetMode(byte(mode))
 
 	pressure, err := d.ReadPressure()
 	if err != nil {

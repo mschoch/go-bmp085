@@ -231,3 +231,7 @@ func (d *Device) ReadTemp() (temp float32, err error) {
 	temp = float32(t) / 10.0
 	return
 }
+
+func (d *Device) SetMode(mode byte) {
+	d.mode = mode
+}
