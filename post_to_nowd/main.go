@@ -11,7 +11,7 @@ import (
 	"github.com/mschoch/go-bmp085"
 )
 
-var url = flag.String("url", "http://localhost:4793/", "root url of nowd server")
+var url = flag.String("url", "http://localhost:4793", "root url of nowd server")
 var device = flag.String("device", "sensor", "name of device")
 var elevation = flag.Float64("elevation", 0, "Elevation of sensor in meters")
 
