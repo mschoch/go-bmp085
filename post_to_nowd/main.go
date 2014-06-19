@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"time"
 
 	"github.com/mschoch/go-bmp085"
 )
@@ -43,8 +44,9 @@ func main() {
 	adjustedPressureHg := adjustedPressure / bmp085.TO_INCHES_MERCURY
 
 	jsonData := map[string]interface{}{
-		"t": temp,
-		"p": adjustedPressureHg,
+		"t":  temp,
+		"p":  adjustedPressureHg,
+		"ts": time.Now().Format(time.RFC3339),
 	}
 
 	jsonOut, err := json.Marshal(jsonData)
