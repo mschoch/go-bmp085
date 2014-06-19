@@ -17,6 +17,10 @@ import (
 	"github.com/mschoch/go-bmp085"
 )
 
+var raw = flag.Bool("raw", false, "print raw values not adjusted to sea-level")
+var sealevel = flag.Bool("sealevel", true, "print sea-level adjusted values")
+var hg = flag.Bool("hg", false, "print value in inches mercury")
+var pa = flag.Bool("pa", true, "print value in pascals")
 var mode = flag.Int("mode", int(bmp085.STANDARD), "mode: 0-ultralowpower, 1-standard, 2-highres, 3-ultrahighres")
 var elevation = flag.Float64("elevation", 0, "Elevation of sensor in meters")
 
@@ -38,10 +42,28 @@ func main() {
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 	}
-	fmt.Printf("Pressure is %dpa\n", pressure)
-
-	if *elevation != 0.0 {
-		adjustedPressure := float64(pressure) / math.Pow(1-(*elevation/44330), 5.255)
-		fmt.Printf("Sea-level adjusted pressure is %fpa\n", adjustedPressure)
+	if *raw {
+		fmt.Printf("Raw pressure:\n")
+		if *pa {
+			fmt.Printf("\t%d pa\n", pressure)
+		}
+		if *hg {
+			pressureHg := float64(pressure) / bmp085.TO_INCHES_MERCURY
+			fmt.Printf("\t%f in\n", pressureHg)
+		}
 	}
+
+	if *sealevel {
+		fmt.Printf("Sea-level adjusted pressure:\n")
+		adjustedPressure := float64(pressure) / math.Pow(1-(*elevation/44330), 5.255)
+		if *pa {
+			fmt.Printf("\t%f pa\n", adjustedPressure)
+		}
+
+		if *hg {
+			adjustedPressureHg := adjustedPressure / bmp085.TO_INCHES_MERCURY
+			fmt.Printf("\t%f in\n", adjustedPressureHg)
+		}
+	}
+
 }

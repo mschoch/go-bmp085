@@ -17,6 +17,8 @@ import (
 	"bitbucket.org/gmcbay/i2c"
 )
 
+const TO_INCHES_MERCURY = 3386.389
+
 const I2C_ADDR = 0x77
 
 const (
